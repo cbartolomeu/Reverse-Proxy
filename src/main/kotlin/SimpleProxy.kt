@@ -1,7 +1,6 @@
 import connectors.ProxyConnector
+import feature.Proxy
 import io.ktor.application.Application
-import io.ktor.application.ApplicationCallPipeline
-import io.ktor.application.call
 import io.ktor.application.install
 import io.ktor.client.HttpClient
 import io.ktor.features.CallLogging
@@ -12,12 +11,11 @@ fun Application.simpleProxyModule() {
     val client = HttpClient {
         followRedirects = false
     }
-    val con = ProxyConnector(client)
     install(DefaultHeaders)
-    install(CallLogging){
+    install(CallLogging) {
         level = Level.INFO
     }
-    intercept(ApplicationCallPipeline.Call) {
-        con.intercept(call)
+    install(Proxy) {
+        connector = ProxyConnector(client)
     }
 }
