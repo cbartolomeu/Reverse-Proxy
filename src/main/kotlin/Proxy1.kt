@@ -3,5 +3,5 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 
 fun main() {
-    embeddedServer(Netty, 8080, module = Application::loadBalanceModule).start()
+    embeddedServer(Netty, 8081, module = Application::simpleProxyModule).start()
 }

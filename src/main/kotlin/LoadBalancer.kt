@@ -7,6 +7,7 @@ import io.ktor.client.call.call
 import io.ktor.client.request.host
 import io.ktor.features.CallLogging
 import io.ktor.features.DefaultHeaders
+import io.ktor.features.origin
 import io.ktor.http.*
 import io.ktor.http.content.OutgoingContent
 import io.ktor.request.host
@@ -17,20 +18,27 @@ import io.ktor.util.filter
 import kotlinx.coroutines.io.ByteWriteChannel
 import kotlinx.coroutines.io.copyAndClose
 import org.slf4j.event.Level
+import java.util.concurrent.atomic.AtomicLong
 
-fun Application.simpleProxyModule() {
+val hosts = arrayOf("localhost:8081", "localhost:8082")
+val next = AtomicLong(0)
+fun next(): Int = (next.getAndIncrement() % 2).toInt()
+
+fun Application.loadBalanceModule() {
     val client = HttpClient {
         followRedirects = false
     }
     install(DefaultHeaders)
-    install(CallLogging){
+    install(CallLogging) {
         level = Level.INFO
     }
     intercept(ApplicationCallPipeline.Call) {
         val exchange = client.call(call.request.uri) {
             method = call.request.httpMethod
-            host = call.request.host()
+            host = hosts[next()]
             headers.appendAll(call.request.headers)
+            headers.append(HttpHeaders.XForwardedHost, call.request.host())
+            headers.append(HttpHeaders.XForwardedFor, call.request.origin.remoteHost)
         }
 
         val exchangeHeaders = exchange.response.headers
