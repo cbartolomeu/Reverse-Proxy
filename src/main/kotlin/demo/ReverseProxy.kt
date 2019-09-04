@@ -41,7 +41,9 @@ class ReverseProxy(private val port: Int) {
                     route("/") {
                         handle {
                             if (throttling.value) otherPipeline.execute(call, subject)
-                            client.value.forward(call, "localhost:8081")
+                            val hasResponse = call.response.status() != null // if the throttling pipeline responded
+                            // Default is localhost:8081 in case not load balanced
+                            if (!hasResponse) client.value.forward(call, "localhost:8081")
                         }
                     }
                 }
